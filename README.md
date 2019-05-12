@@ -71,10 +71,14 @@ ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceBA, fill=blue, a
 
 As above, but with a buffer included to encompass a small amount of adjacent `mainland`.
 ```R
-differenceBABuffer <- st_buffer(differenceBA, 0.1) # buffer differenceBA by 0.1 map units
+differenceBABuffer <- st_buffer(differenceBA, dist=0.1) # buffer differenceBA by 0.1 map units
 ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceBABuffer, color=NA, fill=red, alpha=0.5)
 ```
 ![Fifth plot](5.png)
+The `dist` parameter in `st_buffer()` is in map units. If you're working in geographical coordinates (e.g., degrees of latitude and longitude), you'll first need to use `st_transform()` to project your spatial data. For Australia, I would use `st_transform(differenceBA, 3577)` to transform my spatial data to the Australia Albers equal-area projection. My spatial data will then be in units of metres (i.e., Eastings and Northerns in metres) and my `dist` parameter would be supplied in metres. So a buffer of 1km would be applied with `st_buffer(differenceBA, dist=1000)`.
+
+--
+
 
 Clip so that we get only parts that are not shared between `mainland` and `range`. Not useful for our purposes.
 ```R
