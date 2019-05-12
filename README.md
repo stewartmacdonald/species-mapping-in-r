@@ -1,5 +1,5 @@
 # Species mapping in R
-Not much here at the moment. Just some code snippets that I wrote when I was getting my head around polygon operations while I was creating maps of species geographic ranges. The context of this code is that we have two shapes: the `mainland`, which might represent Australia; and the `range`, which is a polygon that represents the geographical distribution of the species we're interested in. To make pretty maps, you want to clip the `range` so that it only covers `mainland` (for terrestrial species) or so that it only covers the ocean (marine species).
+Not much here at the moment. Just some code snippets that I wrote when I was getting my head around polygon operations while I was creating maps of species geographic ranges. The context of this code is that we have two shapes: the `mainland`, which might represent Australia; and the `range`, which is a polygon that represents the geographical distribution of the species we're interested in. If `range` has been hand drawn (using the polygon tool in Google Maps, for example), it is likely that it won't match up exactly with the boundaries of `mainland`. To make pretty maps, you want to clip `range` so that it only covers `mainland` (for terrestrial species) or so that it only covers the ocean (marine species).
 
 Note that this code does not deal with species distribution modelling.
 
