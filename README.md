@@ -47,6 +47,7 @@ ggplot() + geom_sf(data=both, fill=c(red, blue), alpha=0.5)
 ```
 ![First plot](1.png)
 
+---
 
 # Perform a few geometry operations and plot the results.
 Clip so that we only get parts of `range` that fall on `mainland`. Useful for terrestrial species.
@@ -56,6 +57,8 @@ ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=intersectAB, fill=purple, 
 ```
 ![Second plot](2.png)
 
+---
+
 Clip so that we only get parts of `mainland` that are outside `range`. Not useful for our purposes, but here to show that the order of parameters in `st_difference()` matters.
 ```R
 differenceAB <- st_difference(a, b) # returns the parts of 'a' that are outside of 'b'
@@ -63,12 +66,16 @@ ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceAB, fill=red, al
 ```
 ![Third plot](3.png)
 
+---
+
 Clip so that we only get parts of `range` that are outside of `mainland`. Useful for marine species.
 ```R
 differenceBA <- st_difference(b, a) # returns the parts of 'b' that are outside of 'a'
 ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceBA, fill=blue, alpha=0.5)
 ```
 ![SMZ Fourth plot](4.png)
+
+---
 
 As above, but with a buffer included to encompass a small amount of adjacent `mainland`.
 ```R
@@ -78,6 +85,7 @@ ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceBABuffer, color=
 ![Fifth plot](5.png)
 The `dist` parameter in `st_buffer()` is in map units. If you're working in geographical coordinates (e.g., degrees of latitude and longitude), you'll first need to use `st_transform()` to project your spatial data. For Australia, I would use `st_transform(differenceBA, 3577)` to transform my spatial data to the Australian Albers equal-area projection. My spatial data would then be in units of metres (i.e., Eastings and Northings in metres) and my `dist` parameter would be supplied in metres. So a buffer of 1km would be applied with `st_buffer(differenceBA, dist=1000)`.
 
+---
 
 Clip so that we get only parts that are not shared between `mainland` and `range`. Not useful for our purposes.
 ```R
