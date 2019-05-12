@@ -59,21 +59,21 @@ ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=intersectAB, fill=purple, 
 
 ---
 
-Clip so that we only get parts of `mainland` that are outside `range`. Not useful for our purposes, but here to show that the order of parameters in `st_difference()` matters.
-```R
-differenceAB <- st_difference(a, b) # returns the parts of 'a' that are outside of 'b'
-ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceAB, fill=red, alpha=0.5)
-```
-![Third plot](3.png)
-
----
-
 Clip so that we only get parts of `range` that are outside of `mainland`. Useful for marine species.
 ```R
 differenceBA <- st_difference(b, a) # returns the parts of 'b' that are outside of 'a'
 ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceBA, fill=blue, alpha=0.5)
 ```
 ![SMZ Fourth plot](4.png)
+
+---
+
+Clip so that we only get parts of `mainland` that are outside `range`. Not useful for our purposes, but here to show that the order of parameters in `st_difference()` matters.
+```R
+differenceAB <- st_difference(a, b) # returns the parts of 'a' that are outside of 'b'
+ggplot() + geom_sf(data=both, fill=NA) + geom_sf(data=differenceAB, fill=red, alpha=0.5)
+```
+![Third plot](3.png)
 
 ---
 
