@@ -1,0 +1,447 @@
+---
+title: "Geospatial data in R"
+author: "Stewart Macdonald"
+date: "21/06/2020"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(sf)
+library(tidyverse)
+library(kableExtra)
+```
+
+## Useful resources
+
+CRAN task view for spatial data:  
+https://cran.r-project.org/web/views/Spatial.html
+
+Geocomputation with R:  
+https://geocompr.robinlovelace.net
+
+sf package cheatsheet:  
+https://github.com/rstudio/cheatsheets/blob/master/sf.pdf
+
+sf package overview:  
+https://r-spatial.github.io/sf/articles/sf1.html
+
+## Geospatial data
+
+Generally refers to spatial data that is positioned on Earth
+
+- 1D: a point on a line
+- 2D: a point on an x-y plane
+- 3D: x & y & z (altitude)
+- 4D: x & y & z & time
+
+## Sources of geospatial data
+
+- GPS points (e.g., collected on your phone)
+- Country/state/property boundaries (e.g., from gov agency)
+- Georeferenced images (e.g., sat imagery, drone photos)
+
+## Coordinate Reference Systems (CRSes)
+- CRSes and projections and datums
+  - a CRS consists of a geometric model/ellipsoid of the shape of the earth and a datum (origin of the coordinates, and their units)
+- CRS can be geographic or projected
+  - Geo - points on an ellipsoid, in degrees
+  - Proj - points on a plane, in metres
+- If the earth were a perfect sphere, we could have a global CRS
+  - But it's not. So we don't.
+
+## Geographic
+- Most common; global format (WGS84)
+- Example: -19.327459˚, 146.760092˚
+  - lat, long = y, x
+  - x, y = long, lat
+- Degrees of latitude: north-south
+- Degrees of longitude: east-west
+
+- Note:
+  - Be careful when longitudes cross the prime meridian
+  - 1 degree of latitude = 111km anywhere on the globe
+  - 1 degree of longitude varies depending on latitude
+
+## Geographic - latitude
+![](https://www.ibm.com/support/knowledgecenter/SSEPEK_12.0.0/spatl/src/art/0sbp5006.gif)
+[IBM - Geographic coordinate system](https://www.ibm.com/support/knowledgecenter/SSEPEK_12.0.0/spatl/src/tpc/spatl_csb3022a.html)
+
+## Geographic - longitude
+![](https://www.ibm.com/support/knowledgecenter/SSEPEK_12.0.0/spatl/src/art/0sbp5007.gif)
+
+## Geographic - varying distances
+![](https://www.ibm.com/support/knowledgecenter/SSEPEK_12.0.0/spatl/src/art/0sbp5003.gif)
+
+## Projected
+- A flat representation of the spherical planet
+  - Like any printed map
+- Example: 1585278 East, -2497674 North
+- Units in, e.g., metres
+- Convenient to work with
+  - Areas and distances are all in metres (or square metres)
+
+## Two main formats - raster
+- Raster = matrix or grid
+  - one file can have multiple bands
+    - Most commonly encountered in sat imagery: Red & Green & Blue bands
+  - GeoTiff - georeferenced TIFF image
+  - Can be geographic or projected
+    - Geographic: map units will be in degrees
+    - Projected: map units will be, e.g., metres
+
+## Two main formats - vector
+- Vector = points that may or may not be connected
+    - Shapefile
+    - Delimited text with X & Y columns
+  - Simple Features - standard for geospatial data exchange - https://en.wikipedia.org/wiki/Simple_Features
+
+## GIS tools
+- ArcGIS (powerful, expensive, frustrating)
+- QGIS (free & open source, still frustrating)
+  - Great for rapid visualisations
+- GDAL
+  - used behind-the-scenes in many other software
+  - Can also be used on the command line
+- PostgreSQL with PostGIS extension
+  - Probably overkill for most research projects
+  - Great for long-term storage and analysis
+- Google Earth Engine
+   - Very powerful way of dealing with rasters, esp. sat imagery
+
+## GIS in R
+- Packages:
+  - raster
+  - sp: SPatial
+    - older, being used less
+  - sf: Simple Features
+    - use this for any new code you write
+    - objects are data frames, and thus integrate with tidyverse; also, it actually works
+
+## sf package
+- Objects are dataframes
+  - Standard dataframe, with a `geometry` column added that contains the geometry info for each row
+- Example functions
+  - `st_read()` to read in spatial data in various formats
+  - `st_intersection` to calculate spatial overlaps
+  - `st_transform` to transform between CRSes (e.g., geographic to projected)
+  - `st_distance` to calculate distance in the correct units
+  - `st_area` to calculate area in the correct units
+- The `st` prefix stands for *spatio-temporal*
+
+## Reading CSV text files
+
+```{r, echo=TRUE}
+
+townFile <- 'https://raw.githubusercontent.com/stewartmacdonald/species-mapping-in-r/master/towns.csv'
+townDF <- read.csv(townFile) %>%
+  
+  # select the long and lat cols from the data frame
+  st_as_sf(coords = c("long", "lat"),
+               crs=4326,
+               remove=FALSE) %>%
+	
+	# transform from geographical to projected (Aus Albers Equal Area)
+	st_transform(3577)
+
+
+```
+
+## townDF
+```{r, echo=TRUE}
+townDF
+```
+
+## Plotting points
+```{r, echo=TRUE}
+plot(townDF$long, townDF$lat)
+```
+
+## Reading in GeoJSON (or similar)
+```{r, echo=TRUE}
+worldFile <- 'https://github.com/stewartmacdonald/covid-19/raw/master/world.geojson'
+ausShp <- st_read(worldFile, quiet=TRUE) %>%
+  dplyr::filter(ADMIN == 'Australia')
+
+ausShp
+```
+
+## Plotting lines
+```{r, echo=TRUE}
+plot(ausShp, col='white', max.plot=1, reset=FALSE)
+#points(townDF$long, townDF$lat, pch=16, col='lightgrey')
+plot(st_transform(townDF, 4326), pch=16, col='black', add=T)
+```
+
+## Plotting with ggplot
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp)
+```
+
+## Plotting with ggplot
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) + 
+  geom_sf(data=townDF)
+```
+
+## Styling
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) + 
+  geom_sf(data=townDF, aes(colour=name)) +
+  theme_classic()
+```
+
+## Styling
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) + geom_sf(data=townDF, aes(colour=name)) +
+  theme_classic() + ylim(-45, -10)
+```
+
+## Styling
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) + geom_sf(data=townDF, aes(colour=name)) +
+  theme_classic() + ylim(-45, -10) +
+  coord_sf(datum = NA) # to remove graticules and axes
+```
+
+## A better Australia
+```{r, echo=TRUE}
+ausFile <- 'https://raw.githubusercontent.com/stewartmacdonald/species-mapping-in-r/master/australia.geojson'
+ausShp <- st_read(ausFile, quiet=TRUE)
+ausShp
+```
+
+## Plotting
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) +
+  theme_classic() + coord_sf(datum = NA)
+```
+
+## Plotting
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp) + geom_sf(data=townDF) +
+  theme_classic() + coord_sf(datum = NA)
+```
+
+## Plotting
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp, aes(fill=ADMIN_NAME)) + geom_sf(data=townDF) +
+  theme_classic() + coord_sf(datum = NA)
+```
+
+## Spatial operations
+What state is each town in?
+```{r, echo=TRUE}
+townDF
+```
+
+## Spatial operations
+Append the states' attributes to the towns they contain
+```{r, echo=TRUE}
+town2DF <- st_join(townDF, st_transform(ausShp, 3577))
+town2DF
+```
+
+## mapview - interactive spatial data
+`mapview::mapview(ausShp)`
+![](https://raw.githubusercontent.com/stewartmacdonald/species-mapping-in-r/master/mapview2.png)
+
+## mapview - interactive spatial data
+`mapview::mapview(ausShp)`
+![](https://raw.githubusercontent.com/stewartmacdonald/species-mapping-in-r/master/mapview3.png)
+
+## Plotting
+```{r, echo=TRUE}
+ggplot() +
+  geom_sf(data=ausShp, fill='white') +
+  geom_sf(data=town2DF, aes(colour=ADMIN_NAME)) +
+  theme_classic() + coord_sf(datum = NA)
+```
+
+## Other operations
+```{r, echo=TRUE}
+# Colours
+red    <- '#f90000'
+blue   <- '#0035f9'
+purple <- '#8900f9'
+
+# Mainland
+aPts <- c(1,1, 2,2, 3,1, 4,1, 5,3, 4,5.5, 3.5,4,
+          3,5, 2,5, 2,4, 1,5, 0,3, 1,1)
+aPts <- matrix(aPts, ncol=2, byrow=T)
+a <- st_polygon(list(aPts))
+
+# Species range
+bPts <- c(0,3, 5,3, 5,6, 0,6, 0,3)
+bPts <- matrix(bPts, ncol=2, byrow=T)
+b <- st_polygon(list(bPts))
+```
+
+## Other operations
+Convert to `sf` objects
+```{r, echo=TRUE}
+mainland <- st_sf(data.frame(name='mainland', geom=st_sfc(a)),
+                  agr='constant')
+
+species <- st_sf(data.frame(name='species_range', geom=st_sfc(b)),
+                 agr='constant')
+
+both <- rbind(mainland, species)
+```
+
+## Other operations
+Plot mainland
+```{r, echo=TRUE}
+ggplot() +
+	geom_sf(data=mainland, fill=red,  alpha=0.5)
+```
+
+## Other operations
+Add species range
+```{r, echo=TRUE}
+ggplot() +
+	geom_sf(data=mainland, fill=red,  alpha=0.5) +
+	geom_sf(data=species,  fill=blue, alpha=0.5)
+```
+
+## Intersection
+```{R, echo=TRUE}
+# returns the overlap between a and b. Order doesn't matter.
+intersection <- st_intersection(mainland, species)
+ggplot() +
+  geom_sf(data=both, fill=NA) +
+  geom_sf(data=intersection, fill=purple, alpha=0.5)
+```
+
+## Difference
+```{R, echo=TRUE}
+# returns the parts of 'b' that are outside of 'a'
+differenceAB <- st_difference(species, mainland)
+ggplot() +
+  geom_sf(data=both, fill=NA) +
+  geom_sf(data=differenceAB, fill=blue, alpha=0.5)
+```
+
+## Difference - order matters
+```{R, echo=TRUE}
+# returns the parts of 'b' that are outside of 'a'
+differenceBA <- st_difference(mainland, species)
+ggplot() +
+  geom_sf(data=both, fill=NA) +
+  geom_sf(data=differenceBA, fill=red, alpha=0.5)
+```
+
+## Difference with buffer
+```{R, echo=TRUE}
+# returns the parts of 'b' that are outside of 'a', with a small buffer
+differenceAB <- st_difference(species, mainland)
+differenceAB <- st_buffer(differenceAB, dist=0.1)
+ggplot() +
+  geom_sf(data=both, fill=NA) +
+  geom_sf(data=differenceAB, fill=blue, alpha=0.5)
+```
+
+## Union
+```{R, echo=TRUE}
+# Merges two polygons into one
+union <- st_union(species, mainland)
+ggplot() +
+  geom_sf(data=union, fill=purple, alpha=0.5)
+```
+
+## Centroid
+```{R, echo=TRUE}
+# Range centre
+centre <- st_centroid(species)
+ggplot() +
+  geom_sf(data=species, fill=NA) +
+  geom_sf(data=mainland, fill=red, alpha=0.5) +
+  geom_sf(data=centre)
+```
+
+## Within et al.
+Is the centre of the `species` polygon within the `mainland` polygon?
+```{R, echo=TRUE}
+v <- st_within(centre, mainland, sparse=F)	    # true
+v <- st_intersects(centre, mainland, sparse=F)	# true
+v <- st_disjoint(centre, mainland, sparse=F)	# false
+
+# Order matters
+v <- st_contains(centre, mainland, sparse=F)	# false
+v <- st_contains(mainland, centre, sparse=F)	# true
+```
+
+## More info
+`species` and `mainland` examples of spatial operations taken from:  
+https://github.com/stewartmacdonald/species-mapping-in-r
+
+## Base maps
+```{r, echo=TRUE}
+#devtools::install_github('Chrisjb/basemapR')
+library(basemapR)
+
+townDF <- st_transform(townDF, 4326)
+
+# create bbox from our sf object and expand it by 1km
+bbox <- expand_bbox(st_bbox(townDF), X = 1000, Y = 1000)
+
+ggplot() +
+  base_map(st_bbox(townDF), increase_zoom=2, basemap='google-terrain') +
+  geom_sf(data=townDF) +
+  
+  coord_sf(datum = NA,
+           xlim = c(bbox['xmin'], bbox['xmax']),
+           ylim = c(bbox['ymin'], bbox['ymax'])) +
+  theme_minimal() +
+  labs(caption = 'Map data \uA9 2020 Google')
+```
+
+## Base maps
+```{r, echo=FALSE}
+#devtools::install_github('Chrisjb/basemapR')
+library(basemapR)
+
+townDF <- st_transform(townDF, 4326)
+
+# create bbox from our sf object and expand it by 1km
+bbox <- expand_bbox(st_bbox(townDF), X = 1000, Y = 1000)
+
+ggplot() +
+  base_map(st_bbox(townDF), increase_zoom=2, basemap='google-terrain') +
+  geom_sf(data=townDF) +
+  
+  coord_sf(datum = NA,
+           xlim = c(bbox['xmin'], bbox['xmax']),
+           ylim = c(bbox['ymin'], bbox['ymax'])) +
+  theme_minimal() +
+  labs(caption = 'Map data \uA9 2020 Google')
+```
+
+## Base maps
+```{r, echo=FALSE}
+#devtools::install_github('Chrisjb/basemapR')
+library(basemapR)
+
+townDF <- st_transform(townDF, 4326)
+
+# create bbox from our sf object and expand it by 1km
+bbox <- expand_bbox(st_bbox(townDF), X = 1000, Y = 1000)
+
+ggplot() +
+  base_map(st_bbox(townDF), increase_zoom=2, basemap='google-satellite') +
+  geom_sf(data=townDF) +
+  
+  coord_sf(datum = NA,
+           xlim = c(bbox['xmin'], bbox['xmax']),
+           ylim = c(bbox['ymin'], bbox['ymax'])) +
+  theme_minimal() +
+  labs(caption = 'Map data \uA9 2020 Google')
+```
